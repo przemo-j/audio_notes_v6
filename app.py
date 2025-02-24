@@ -52,7 +52,7 @@ def assure_db_collection_exists():
             ),
         )
     else:
-        print("Kolekcja już istnieje")
+        print("Kolekcja już istnieje!")
 
 def get_embedding(text):
     openai_client = get_openai_client()
