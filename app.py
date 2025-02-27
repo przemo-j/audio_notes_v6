@@ -9,6 +9,13 @@ from qdrant_client.models import PointStruct, Distance, VectorParams
 
 
 env = dotenv_values(".env")
+### Secrets using Streamlit Cloud Mechanism
+# https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
+#if 'QDRANT_URL' in st.secrets:
+#    env['QDRANT_URL'] = st.secrets['QDRANT_URL']
+#if 'QDRANT_API_KEY' in st.secrets:
+#    env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
+###
 
 EMBEDDING_MODEL = "text-embedding-3-large"
 
@@ -38,7 +45,10 @@ def transcribe_audio(audio_bytes):
 #
 @st.cache_resource
 def get_qdrant_client():
-    return QdrantClient(path=":memory:")
+    return QdrantClient(
+    url=env["QDRANT_URL"], 
+    api_key=env["QDRANT_API_KEY"],
+)
 
 def assure_db_collection_exists():
     qdrant_client = get_qdrant_client()
@@ -52,9 +62,9 @@ def assure_db_collection_exists():
             ),
         )
     else:
-        print("Kolekcja już istnieje!")
+        print("Kolekcja już istnieje")
 
-def get_embedding(text):
+def get_embeddings(text):
     openai_client = get_openai_client()
     result = openai_client.embeddings.create(
         input=[text],
@@ -75,7 +85,7 @@ def add_note_to_db(note_text):
         points=[
             PointStruct(
                 id=points_count.count + 1,
-                vector=get_embedding(text=note_text),
+                vector=get_embeddings(text=note_text),
                 payload={
                     "text": note_text,
                 },
@@ -99,7 +109,7 @@ def list_notes_from_db(query=None):
     else:
         notes = qdrant_client.search(
             collection_name=QDRANT_COLLECTION_NAME,
-            query_vector=get_embedding(text=query),
+            query_vector= get_embeddings(text=query),
             limit=10,
         )
         result = []
